@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { ResetPasswordDTO, UserDTO } from './dto';
-import { MailerService } from "@nestjs-modules/mailer"
 import { v4 as uuidV4 } from "uuid"
 import { InjectModel } from "@nestjs/mongoose"
 import { Model } from 'mongoose';
@@ -9,11 +8,16 @@ import { ForgotInterface, UserInterface, VerificationInterface } from './interfa
 import { ForbiddenException } from '@nestjs/common/exceptions';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config/dist';
+import * as SendGrid from '@sendgrid/mail';
+import { MailerService } from "@nestjs-modules/mailer"
 
 @Injectable()
 export class EmailService {
 
-    constructor(private mailService: MailerService, private jwt:JwtService, private config:ConfigService, @InjectModel("Verification") private verificationModel:Model<VerificationInterface>, @InjectModel("User") private userModel:Model<UserInterface>, @InjectModel("Forgot Password") private forgotModel:Model<ForgotInterface>) {}
+    constructor(private jwt:JwtService, private config:ConfigService, @InjectModel("Verification") private verificationModel:Model<VerificationInterface>, @InjectModel("User") private userModel:Model<UserInterface>, @InjectModel("Forgot Password") private forgotModel:Model<ForgotInterface>, private mailService: MailerService) {
+        SendGrid.setApiKey('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')
+        
+    }
 
     async register(userDTO: UserDTO) {
         try {
@@ -31,10 +35,13 @@ export class EmailService {
                 to: userDTO.email,
                 from: "rutujbokade36@gmail.com",
                 subject: "Email verification",
-                text: `Click on the link below to verify your email
-                        http://localhost:5000/verify/${uid}`
+                template: 'register',
+                context: {
+                    link: `http://localhost:5173/register-verification/${verificationInstance.verificationID}`,
+                    name: user.name
+                }
             })
-
+            
             return { msg: "Check your mail for email verification" }
             
         } catch (error) {
@@ -48,6 +55,9 @@ export class EmailService {
     async login(dto: UserDTO) {
         // find user
         const user = await this.userModel.findOne({ email: dto.email })
+
+        if(!user.isVerified) throw new ForbiddenException("Email not verified")        
+
         // if does not exist throw error
         if(!user) throw new ForbiddenException("Invalid credentials")
         
@@ -104,10 +114,13 @@ export class EmailService {
             to: email,
             from: "rutujbokade36@gmail.com",
             subject: "Email verification",
-            text: `Click on the link below to verify your email
-                    http://localhost:5000/verify/${verifyInstance.verificationID}`
-        })  
-
+            template: 'register',
+            context: {
+                link: `http://localhost:5173/register-verification/${verifyInstance.verificationID}`,
+                name: userInstance.name
+            }
+        })
+        
         return { msg: "Check your mail to verify your email" }
     }
 
@@ -118,14 +131,15 @@ export class EmailService {
 
         const verifyInstance = await this.forgotModel.findOne({ user: userInstance._id })
         
-        await this.mailService.sendMail({
+        await SendGrid.send({
             to: email,
             from: "rutujbokade36@gmail.com",
             subject: "Email verification",
             text: `Click on the link below to reset your password
-                    http://localhost:5000/verify/${verifyInstance.forgotID}`
-        })  
-
+                    http://localhost:5173/forgot-password/${verifyInstance.forgotID}`,
+            
+        })
+        
         return { msg: "Check your mail to reset your password" }
     }
 
@@ -143,7 +157,7 @@ export class EmailService {
 
             await this.forgotModel.findOneAndDelete({ forgotID: id })
 
-            return { msg: "Email verified successfully" }
+            return { msg: "Password reset successful" }
         } catch (error) {
             throw new ForbiddenException(error.message)
         }
@@ -161,11 +175,14 @@ export class EmailService {
         await this.mailService.sendMail({
             to: email,
             from: "rutujbokade36@gmail.com",
-            subject: "Email verification",
-            text: `Click on the link below to verify your email
-                    http://localhost:5000/verify/${uid}`
+            subject: "Reset Password",
+            template: 'forgot',
+            context: {
+                link: `http://localhost:5173/forgot-password/${forgotInstance.forgotID}`,
+                name: userInstance.name
+            }
         })
-
+        
         return { msg: "Check your email to reset password" }
     }
 }

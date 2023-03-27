@@ -1,0 +1,57 @@
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;600&display=swap');
+
+        .block {
+            text-align: center;
+        }
+
+        .title {
+            text-align: center;
+            font-family: 'Comfortaa', cursive;
+            font-size: 28px;
+            color: rgb(64, 136, 231);
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            font-family: 'Comfortaa', cursive;
+        }
+
+        .content {
+            text-align: center;
+        }
+
+        p {
+            margin: 10px 0;
+        }
+
+        .btn {
+            background-color: rgb(64, 136, 231);
+            padding: 7px 15px;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="block">
+        <div class="title">
+            <h1>Verify</h1>
+        </div>
+        <div class="content">
+            <p>Hey {{name}}!!<br/>You can reset your password by clicking the below button</p>
+            <a href={{link}} class="btn">Reset password</a>
+            <p>You can also click on the link provided below or copy link in the browser to reset your password</p>
+            <a href={{link}}>{{link}}</a>
+        </div>
+    </div>
+</body>
+
+</html>
